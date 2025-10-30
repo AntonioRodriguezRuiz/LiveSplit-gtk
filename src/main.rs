@@ -1,7 +1,9 @@
-// mod api;
 mod config;
+mod ui;
 
 use std::cell::RefCell;
+use std::fs;
+use std::path::Path;
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -9,6 +11,7 @@ use std::time::Duration;
 // use api::api::{create, reset, split, start};
 
 use livesplit_core::{Run, Segment, Timer, TimerPhase};
+use tracing::info;
 use tracing_subscriber;
 
 use adw::prelude::*;
@@ -17,7 +20,16 @@ use glib::ControlFlow::Continue;
 use gtk4::prelude::*;
 use gtk4::{gdk::Display, Box as GtkBox, Builder, Button, CssProvider, Label, Orientation};
 
+use config::Config;
+use ui::ui::TimerUI;
+
 fn main() {
+    // Set tracing to stdout
+    tracing_subscriber::fmt()
+        .with_max_level(tracing::Level::DEBUG)
+        .init();
+
+    info!("Staring UnixSplix!!");
     adw::init().expect("Failed to initialize libadwaita");
 
     let app = Application::builder()
@@ -35,17 +47,25 @@ fn main() {
 #[derive(Clone, Debug)]
 pub struct LiveSplitGTK {
     pub timer: Rc<RefCell<Timer>>,
+    pub config: Rc<RefCell<Config>>,
 }
 
 impl LiveSplitGTK {
     pub fn new() -> Self {
-        let mut run = Run::new();
-        run.push_segment(Segment::new(""));
+        let config = Config::parse("config.yaml").unwrap_or_default();
+        info!(
+            "Loading config from {} with result {:?}",
+            "config.yaml", config
+        );
+        let run = config.parse_run_or_default();
 
-        let timer = Timer::new(run).expect("");
+        let mut timer = Timer::new(run).expect("Failed to create timer");
+
+        config.configure_timer(&mut timer);
 
         Self {
             timer: Rc::new(RefCell::new(timer)),
+            config: Rc::new(RefCell::new(config)),
         }
     }
 
@@ -64,18 +84,19 @@ impl LiveSplitGTK {
     fn build_ui(&mut self, app: &Application) {
         Self::load_css();
 
-        let builder = Builder::from_file("data/ui/livesplit-gtk.ui");
+        // TODO: Change this to use main ui, from then render timer ui when loading a file
+        // To ensure changes in config and timer translate
+        let timer_binding = self.timer.clone();
+        let config_binding = self.config.clone();
+        let timer_ui = TimerUI::new(timer_binding.borrow_mut(), config_binding.borrow());
+        let ui = timer_ui.build_ui(); // Prevent expiration
 
-        let clamp: adw::Clamp = builder
-            .object("livesplit-gtk")
-            .expect("Couldn't get main widget");
-
-        let window = ApplicationWindow::builder()
+        let window = adw::ApplicationWindow::builder()
             .application(app)
             .title("LiveSplit GTK")
-            .content(&clamp)
             .default_width(400)
             .default_height(600)
+            .content(&ui)
             .build();
 
         window.present();

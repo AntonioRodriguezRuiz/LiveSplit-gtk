@@ -1,0 +1,14 @@
+general:
+  splits: test_splits/Super_Mario_64_-_16_Star_No_LBLJ_DW_Reds_eab37d1e.lss
+  comparison: Personal Best
+  timing-method: RealTime
+window:
+  always-on-top: true
+hotkeys:
+  split: Numpad1
+  reset: Numpad3
+  undo: Numpad8
+  skip: Numpad2
+  pause: Numpad5
+  previous_comparison: Numpad4
+  next_comparison: Numpad6

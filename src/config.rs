@@ -12,36 +12,36 @@ use std::{
 };
 use tracing::error;
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct Config {
     #[serde(default)]
-    general: General,
+    pub general: General,
     #[serde(default)]
     window: Window,
     #[serde(default)]
-    hotkeys: HotkeyConfig,
+    pub hotkeys: HotkeyConfig,
     #[serde(default)]
     connections: Connections,
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
-struct General {
-    splits: Option<PathBuf>,
-    timing_method: Option<TimingMethod>,
-    comparison: Option<String>,
-    auto_splitter: Option<PathBuf>,
+pub struct General {
+    pub splits: Option<PathBuf>,
+    pub timing_method: Option<TimingMethod>,
+    pub comparison: Option<String>,
+    pub auto_splitter: Option<PathBuf>,
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 #[serde(default)]
 struct Window {
     always_on_top: bool,
 }
 
-#[derive(Default, Deserialize)]
+#[derive(Default, Deserialize, Debug)]
 #[serde(rename_all = "kebab-case")]
 #[serde(default)]
 struct Connections {
