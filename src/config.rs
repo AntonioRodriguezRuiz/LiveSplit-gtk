@@ -1,3 +1,8 @@
+// Code modified from Livesplit One Desktop. Published under no license (other related repositories by the author are under MIT), code available
+// Original code by: CryZe
+// Original repository: github.com/CryZe/livesplit-one-desktop
+// Commit: c636ba8
+
 use livesplit_core::{
     auto_splitting,
     run::{parser::composite, saver::livesplit::save_timer},
