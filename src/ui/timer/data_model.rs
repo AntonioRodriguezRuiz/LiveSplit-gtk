@@ -1,4 +1,5 @@
 use crate::config::Config;
+use crate::formatters::label::format_label;
 use crate::utils::time::{format_segment_time, format_split_time};
 
 use adw::prelude::ActionRowExt;
@@ -315,7 +316,7 @@ pub fn compute_selected_segment_info(
 
     let best_value_text = format_split_time(&selected_segment.best_segment_time(), &timer, config);
 
-    let comparison_label_text = format!("{}:", config.general.comparison.as_ref().unwrap());
+    let comparison_label_text = format!("{}:", format_label(timer.current_comparison()));
 
     let comparison_value_text = format_segment_time(
         &selected_segment
