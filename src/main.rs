@@ -1,4 +1,5 @@
 mod config;
+mod formatters;
 mod ui;
 mod utils;
 

@@ -2,8 +2,10 @@ use crate::config::Config;
 use livesplit_core::{TimeSpan, Timer, TimingMethod};
 use time::Duration as TimeDuration;
 
-/// Default pattern used when formatting times.
-pub const DEFAULT_TIME_FORMAT: &str = "h:m:s.dd";
+/// Default patterns used when formatting times for each context.
+pub const SPLIT_TIME_FORMAT: &str = "h:m:s.dd";
+pub const TIMER_TIME_FORMAT: &str = "h:m:s.dd";
+pub const SEGMENT_TIME_FORMAT: &str = "h:m:s.dd";
 
 /// Formats an optional `TimeSpan` using the provided `pattern`.
 /// If the `TimeSpan` is `None`, this returns `"--"`.
@@ -116,8 +118,11 @@ fn append_fraction(out: &mut String, millis: i64, width: usize) {
 
 /// Formats a split `Time` (which may contain both Real Time and Game Time) into a string,
 /// choosing the appropriate timing method based on the Config and the Timer's current method.
-/// Falls back to `DEFAULT_TIME_FORMAT`.
-pub fn format_split_time(time: &livesplit_core::Time, timer: &Timer, config: &Config) -> String {
+pub fn format_split_time(
+    time: &livesplit_core::Time,
+    timer: &Timer,
+    config: &mut Config,
+) -> String {
     let use_game_time =
         config.is_game_time() || timer.current_timing_method() == TimingMethod::GameTime;
 
@@ -126,12 +131,14 @@ pub fn format_split_time(time: &livesplit_core::Time, timer: &Timer, config: &Co
     } else {
         time.real_time
     };
-    format_time_span_opt(span_opt, DEFAULT_TIME_FORMAT)
+    let total_ms = span_opt.map(|s| s.total_milliseconds() as i64);
+    let pattern = config.format.split.get_pattern(total_ms);
+    format_time_span_opt(span_opt, &pattern)
 }
 
-/// Formats the overall timer's current attempt duration into a string using `DEFAULT_TIME_FORMAT`.
+/// Formats the overall timer's current attempt duration into a string using the configured timer format.
 /// This centralizes the display formatting for the main timer readout.
-pub fn format_timer(timer: &Timer, _config: &Config) -> String {
+pub fn format_timer(timer: &Timer, config: &mut Config) -> String {
     let dur = timer
         .current_attempt_duration()
         .to_duration()
@@ -145,7 +152,9 @@ pub fn format_timer(timer: &Timer, _config: &Config) -> String {
             TimeDuration::ZERO
         })
         .unwrap_or_default();
-    let out = format_duration(&dur);
+    let ms_i64 = (dur.whole_nanoseconds() / 1_000_000) as i64;
+    let pattern = config.format.timer.get_pattern(Some(ms_i64.abs()));
+    let out = format_duration(&dur, &pattern);
     if dur < TimeDuration::ZERO {
         format!("-{}", out)
     } else {
@@ -153,16 +162,22 @@ pub fn format_timer(timer: &Timer, _config: &Config) -> String {
     }
 }
 
-/// Formats a `time::Duration` using the same pattern machinery by converting to TimeSpan.
-pub fn format_duration(duration: &TimeDuration) -> String {
-    let span = TimeSpan::from_milliseconds(duration.whole_nanoseconds() as f64 / 1_000_000.0);
-    format_time_span(&span, DEFAULT_TIME_FORMAT)
+/// Option variant for `time::Duration`.
+pub fn format_segment_time(duration: &TimeDuration, config: &mut Config) -> String {
+    let ms_i64 = (duration.whole_nanoseconds() / 1_000_000) as i64;
+    let pattern = config.format.segment.get_pattern(Some(ms_i64.abs()));
+    format_duration(duration, &pattern)
 }
 
-/// Option variant for `time::Duration`.
-pub fn format_duration_opt(duration: Option<TimeDuration>) -> String {
+/// Formats a `time::Duration` using the same pattern machinery by converting to TimeSpan.
+pub fn format_duration(duration: &TimeDuration, pattern: &str) -> String {
+    let span = TimeSpan::from_milliseconds(duration.whole_nanoseconds() as f64 / 1_000_000.0);
+    format_time_span(&span, pattern)
+}
+
+pub fn format_duration_opt(duration: Option<TimeDuration>, pattern: &str) -> String {
     match duration {
-        Some(d) => format_duration(&d),
+        Some(d) => format_duration(&d, pattern),
         None => "--".to_string(),
     }
 }
@@ -206,7 +221,7 @@ mod tests {
 
     #[test]
     fn test_option() {
-        assert_eq!(format_time_span_opt(None, DEFAULT_TIME_FORMAT), "--");
+        assert_eq!(format_time_span_opt(None, SPLIT_TIME_FORMAT), "--");
         let t = span_ms(10_000);
         assert_eq!(format_time_span_opt(Some(t), "m:s"), "10");
     }
@@ -214,31 +229,31 @@ mod tests {
     #[test]
     fn test_format_duration_basic() {
         let d = TimeDuration::milliseconds(3_145);
-        assert_eq!(format_duration(&d), "3.14");
+        assert_eq!(format_duration(&d, SEGMENT_TIME_FORMAT), "3.14");
     }
 
     #[test]
     fn test_format_duration_min_sec() {
         let d = TimeDuration::milliseconds(125_340);
-        assert_eq!(format_duration(&d), "2:05.34");
+        assert_eq!(format_duration(&d, SEGMENT_TIME_FORMAT), "2:05.34");
     }
 
     #[test]
     fn test_format_duration_hours() {
         let d = TimeDuration::milliseconds(3_845_999);
-        assert_eq!(format_duration(&d), "1:04:05.99");
+        assert_eq!(format_duration(&d, SEGMENT_TIME_FORMAT), "1:04:05.99");
     }
 
     #[test]
     fn test_format_duration_negative() {
         let d = TimeDuration::milliseconds(-61_230);
-        assert_eq!(format_duration(&d), "1:01.23");
+        assert_eq!(format_duration(&d, SEGMENT_TIME_FORMAT), "1:01.23");
     }
 
     #[test]
     fn test_format_duration_option() {
-        assert_eq!(format_duration_opt(None), "--");
+        assert_eq!(format_duration_opt(None, SEGMENT_TIME_FORMAT), "--");
         let d = TimeDuration::seconds(10);
-        assert_eq!(format_duration_opt(Some(d)), "10.00");
+        assert_eq!(format_duration_opt(Some(d), SEGMENT_TIME_FORMAT), "10.00");
     }
 }

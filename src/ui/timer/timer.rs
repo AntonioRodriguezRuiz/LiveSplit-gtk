@@ -54,8 +54,8 @@ impl TimerUI {
         // =====================
         let splits = ListBox::new();
         splits.add_css_class("boxed-list");
-        let splits_rows =
-            TimerUI::build_splits_list(&self.timer.read().unwrap(), &self.config.read().unwrap());
+        let mut config_ref = self.config.write().unwrap();
+        let splits_rows = TimerUI::build_splits_list(&self.timer.read().unwrap(), &mut config_ref);
         for row in splits_rows {
             splits.append(&row);
         }
@@ -70,11 +70,11 @@ impl TimerUI {
             .build();
         center_box.set_start_widget(Some(&TimerUI::build_center_box_current_split_info(
             &self.timer.read().unwrap(),
-            &self.config.read().unwrap(),
+            &mut config_ref,
         )));
         center_box.set_end_widget(Some(&TimerUI::build_center_box_timer(
             &self.timer.read().unwrap(),
-            &self.config.read().unwrap(),
+            &mut config_ref,
         )));
 
         let splits_binding = splits.clone();
@@ -85,7 +85,7 @@ impl TimerUI {
 
         glib::timeout_add_local(Duration::from_millis(16), move || {
             let t = timer_binding.read().unwrap();
-            let c = config_binding.read().unwrap();
+            let mut c = config_binding.write().unwrap();
             // =====================
             // Splits List
             // =====================
@@ -96,7 +96,7 @@ impl TimerUI {
                 }
             }
             // Now rebuild
-            let splits_rows = TimerUI::build_splits_list(&t, &c);
+            let splits_rows = TimerUI::build_splits_list(&t, &mut c);
             for row in splits_rows {
                 splits_binding.append(&row);
             }
@@ -104,9 +104,10 @@ impl TimerUI {
             // =====================
             // Current Split + Timer
             // =====================
-            center_box_binding
-                .set_start_widget(Some(&TimerUI::build_center_box_current_split_info(&t, &c)));
-            center_box_binding.set_end_widget(Some(&TimerUI::build_center_box_timer(&t, &c)));
+            center_box_binding.set_start_widget(Some(
+                &TimerUI::build_center_box_current_split_info(&t, &mut c),
+            ));
+            center_box_binding.set_end_widget(Some(&TimerUI::build_center_box_timer(&t, &mut c)));
 
             Continue
         });
@@ -153,19 +154,19 @@ impl TimerUI {
         run_info
     }
 
-    fn build_splits_list(timer: &Timer, config: &Config) -> Vec<adw::ActionRow> {
+    fn build_splits_list(timer: &Timer, config: &mut Config) -> Vec<adw::ActionRow> {
         data_model::compute_split_rows(timer, config)
             .into_iter()
             .map(|d| widgets::split_row(&d))
             .collect()
     }
 
-    fn build_center_box_current_split_info(timer: &Timer, config: &Config) -> GtkBox {
+    fn build_center_box_current_split_info(timer: &Timer, config: &mut Config) -> GtkBox {
         let data = data_model::compute_current_split_info(timer, config);
         widgets::build_current_split_info_box(&data)
     }
 
-    fn build_center_box_timer(timer: &Timer, config: &Config) -> GtkBox {
+    fn build_center_box_timer(timer: &Timer, config: &mut Config) -> GtkBox {
         widgets::build_timer_box(timer, config)
     }
 }

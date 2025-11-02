@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::utils::time::{format_duration, format_split_time};
+use crate::utils::time::{format_segment_time, format_split_time};
 
 use livesplit_core::{Timer, TimingMethod};
 use time::Duration as TimeDuration;
@@ -94,7 +94,7 @@ fn previous_comparison_values(timer: &Timer, index: usize) -> (TimeDuration, Tim
 }
 
 /// Helper: Format a signed duration with +, -, or ~ and the configured short format.
-fn format_signed(diff: TimeDuration) -> String {
+fn format_signed(diff: TimeDuration, config: &mut Config) -> String {
     let sign = if diff.is_positive() {
         "+"
     } else if diff.is_negative() {
@@ -103,14 +103,14 @@ fn format_signed(diff: TimeDuration) -> String {
         "~"
     };
     let abs = diff.abs();
-    let formatted = format_duration(&abs);
+    let formatted = format_segment_time(&abs, config);
     format!("{}{}", sign, formatted)
 }
 
 /// Builds the data for all split rows given the current `Timer` and `Config`.
 /// This function is pure (no GTK dependencies) and is intended to be unit-tested.
 /// Behavior mirrors the logic in `TimerUI::build_splits_list`.
-pub fn compute_split_rows(timer: &Timer, config: &Config) -> Vec<SplitRowData> {
+pub fn compute_split_rows(timer: &Timer, config: &mut Config) -> Vec<SplitRowData> {
     let mut rows = Vec::new();
 
     let segments = timer.run().segments();
@@ -128,7 +128,7 @@ pub fn compute_split_rows(timer: &Timer, config: &Config) -> Vec<SplitRowData> {
         let mut value_text = format_split_time(
             &segment.comparison(timer.current_comparison()),
             &timer,
-            &config,
+            config,
         );
 
         let mut segment_classes: Vec<&'static str> = Vec::new();
@@ -170,7 +170,7 @@ pub fn compute_split_rows(timer: &Timer, config: &Config) -> Vec<SplitRowData> {
                     || (goldsplit_duration != TimeDuration::ZERO
                         && split_running_time >= goldsplit_duration)
                 {
-                    value_text = format_signed(diff);
+                    value_text = format_signed(diff, config);
                 }
             }
 
@@ -187,10 +187,10 @@ pub fn compute_split_rows(timer: &Timer, config: &Config) -> Vec<SplitRowData> {
                         .unwrap_or_default();
 
                     if config.general.split_format == Some(String::from("Time")) {
-                        value_text = format_split_time(&segment.split_time(), &timer, &config);
+                        value_text = format_split_time(&segment.split_time(), &timer, config);
                     } else if segment_comparison != TimeDuration::ZERO {
                         // DIFF
-                        value_text = format_signed(diff);
+                        value_text = format_signed(diff, config);
                     }
                     if segment_comparison != TimeDuration::ZERO {
                         label_classes = classify_split_label(
@@ -270,7 +270,7 @@ pub struct CurrentSplitInfoData {
 /// - Best split value for the current segment
 /// - Comparison label (e.g., "PB:")
 /// - Comparison value (per-segment), adjusted by the previous segment's comparison time
-pub fn compute_current_split_info(timer: &Timer, config: &Config) -> CurrentSplitInfoData {
+pub fn compute_current_split_info(timer: &Timer, config: &mut Config) -> CurrentSplitInfoData {
     let segments = timer.run().segments();
     let current_index = timer.current_split_index().unwrap_or(0);
     let current_segment = timer.current_split().unwrap_or(segments.get(0).unwrap());
@@ -286,11 +286,11 @@ pub fn compute_current_split_info(timer: &Timer, config: &Config) -> CurrentSpli
         TimeDuration::ZERO
     };
 
-    let best_value_text = format_split_time(&current_segment.best_segment_time(), &timer, &config);
+    let best_value_text = format_split_time(&current_segment.best_segment_time(), &timer, config);
 
     let comparison_label_text = format!("{}:", config.general.comparison.as_ref().unwrap());
 
-    let comparison_value_text = format_duration(
+    let comparison_value_text = format_segment_time(
         &current_segment
             .comparison_timing_method(timer.current_comparison(), timer.current_timing_method())
             .unwrap_or_default()
@@ -298,6 +298,7 @@ pub fn compute_current_split_info(timer: &Timer, config: &Config) -> CurrentSpli
             .checked_sub(previous_comparison_time)
             .unwrap_or_default()
             .abs(), // Abs because later split might be shorter than previous
+        config,
     );
 
     CurrentSplitInfoData {

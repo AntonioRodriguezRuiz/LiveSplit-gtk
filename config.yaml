@@ -13,3 +13,25 @@ hotkeys:
   pause: Numpad5
   previous_comparison: Numpad4
   next_comparison: Numpad6
+  format:
+    split:
+      show-hours: true
+      show-minutes: true
+      show-seconds: true
+      show-decimals: true
+      decimal-places: 2
+      dynamic: true
+    timer:
+      show-hours: true
+      show-minutes: true
+      show-seconds: true
+      show-decimals: true
+      decimal-places: 2
+      dynamic: false
+    segment:
+      show-hours: false
+      show-minutes: true
+      show-seconds: true
+      show-decimals: true
+      decimal-places: 2
+      dynamic: true

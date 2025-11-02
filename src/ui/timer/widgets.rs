@@ -36,7 +36,7 @@ pub fn split_row(data: &SplitRowData) -> ActionRow {
 /// Builds the right-side timer display box (HH:MM:SS.mmm).
 /// - Mirrors existing styling: "timer", "greensplit", "bigtimer", "smalltimer".
 /// - Splits the formatted string to show milliseconds with a smaller label.
-pub fn build_timer_box(timer: &Timer, config: &Config) -> GtkBox {
+pub fn build_timer_box(timer: &Timer, config: &mut Config) -> GtkBox {
     let timer_box = GtkBox::new(Horizontal, 0);
     timer_box.add_css_class("timer");
     if timer.current_phase() == livesplit_core::TimerPhase::Running {
@@ -160,9 +160,9 @@ mod tests {
         run.set_offset(livesplit_core::TimeSpan::from_seconds(-5.0));
         run.push_segment(livesplit_core::Segment::new("Split 1"));
         let timer = livesplit_core::Timer::new(run).expect("timer");
-        let config = Config::default();
+        let mut config = Config::default();
 
-        let timer_box = build_timer_box(&timer, &config);
+        let timer_box = build_timer_box(&timer, &mut config);
 
         // Children: first is bigtimer label with "0.", second is smalltimer label with "00"
         let first = timer_box.first_child().expect("first child");
@@ -186,9 +186,9 @@ mod tests {
         run.set_category_name("Any%");
         run.push_segment(livesplit_core::Segment::new("Split 1"));
         let mut timer = livesplit_core::Timer::new(run).expect("timer");
-        let config = Config::default();
+        let mut config = Config::default();
 
-        let mut timer_box = build_timer_box(&timer, &config);
+        let mut timer_box = build_timer_box(&timer, &mut config);
 
         // Box classes
         assert!(has_class(&timer_box, "timer"));
@@ -196,17 +196,17 @@ mod tests {
 
         timer.start();
 
-        timer_box = build_timer_box(&timer, &config);
+        timer_box = build_timer_box(&timer, &mut config);
         assert!(has_class(&timer_box, "active-timer"));
 
         timer.pause();
 
-        timer_box = build_timer_box(&timer, &config);
+        timer_box = build_timer_box(&timer, &mut config);
         assert!(has_class(&timer_box, "inactive-timer"));
 
         timer.reset(false);
 
-        timer_box = build_timer_box(&timer, &config);
+        timer_box = build_timer_box(&timer, &mut config);
         assert!(has_class(&timer_box, "inactive-timer"));
 
         // Children: first is bigtimer label with "0.", second is smalltimer label with "00"

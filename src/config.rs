@@ -2,6 +2,7 @@
 // Original code by: CryZe
 // Original repository: github.com/CryZe/livesplit-one-desktop
 // Commit: c636ba8
+use crate::formatters::TimeFormat;
 
 use livesplit_core::{
     auto_splitting,
@@ -24,6 +25,8 @@ pub struct Config {
     window: Window,
     #[serde(default)]
     pub hotkeys: HotkeyConfig,
+    #[serde(default)]
+    pub format: Format,
     #[serde(default)]
     connections: Connections,
 }
@@ -50,6 +53,26 @@ struct Window {
 #[serde(default)]
 struct Connections {
     twitch: Option<String>,
+}
+
+#[derive(Deserialize, Debug, Clone)]
+#[serde(rename_all = "kebab-case")]
+#[serde(default)]
+pub struct Format {
+    pub split: TimeFormat,
+    pub timer: TimeFormat,
+    pub segment: TimeFormat,
+}
+
+impl Default for Format {
+    fn default() -> Self {
+        // Defaults for all three formats mirror "h:m:s.dd"
+        Self {
+            split: TimeFormat::default(),
+            timer: TimeFormat::default(),
+            segment: TimeFormat::default(),
+        }
+    }
 }
 
 impl Config {
@@ -80,9 +103,9 @@ impl Config {
         self.general.timing_method == Some(TimingMethod::GameTime)
     }
 
-    // pub fn set_splits_path(&mut self, path: PathBuf) {
-    //     self.general.splits = Some(path);
-    // }
+    pub fn set_splits_path(&mut self, path: PathBuf) {
+        self.general.splits = Some(path);
+    }
 
     pub fn create_hotkey_system(&self, timer: SharedTimer) -> Option<HotkeySystem> {
         HotkeySystem::with_config(timer, self.hotkeys).ok()
