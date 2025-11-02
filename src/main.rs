@@ -28,10 +28,10 @@ fn main() {
     adw::init().expect("Failed to initialize libadwaita");
 
     let app = Application::builder()
-        .application_id("org.LunixRunTools.livesplit-gtk-beta")
+        .application_id("org.LunixRunTools.tuxsplit-beta")
         .build();
 
-    let app_state = Arc::new(RwLock::new(LiveSplitGTK::new()));
+    let app_state = Arc::new(RwLock::new(TuxSplit::new()));
 
     app.connect_activate(move |app| {
         app_state.write().unwrap().build_ui(app);
@@ -40,13 +40,13 @@ fn main() {
 }
 
 #[derive(Clone)]
-pub struct LiveSplitGTK {
+pub struct TuxSplit {
     pub timer: Arc<RwLock<Timer>>,
     pub config: Arc<RwLock<Config>>,
     pub hotkey_system: Arc<RwLock<HotkeySystem>>,
 }
 
-impl LiveSplitGTK {
+impl TuxSplit {
     pub fn new() -> Self {
         let config = Config::parse("config.yaml").unwrap_or_default();
         let run = config.parse_run_or_default();
@@ -70,7 +70,7 @@ impl LiveSplitGTK {
 
     fn load_css() {
         let provider = CssProvider::new();
-        provider.load_from_path("data/css/livesplit-gtk.css");
+        provider.load_from_path("data/css/tuxsplit.css");
 
         let display = Display::default().expect("Could not connect to a display");
         gtk4::style_context_add_provider_for_display(
@@ -89,16 +89,9 @@ impl LiveSplitGTK {
         let config_binding = self.config.clone();
         let timer_ui = TimerUI::new(timer_binding, config_binding);
 
-        let ui = timer_ui.build_ui(); // Prevent expiration
-
-        let window = adw::ApplicationWindow::builder()
-            .application(app)
-            .title("LiveSplit GTK")
-            .default_width(400)
-            .default_height(600)
-            .content(&ui)
-            .build();
+        let window = timer_ui.build_ui(app);
 
         window.present();
+        // timer_ui.spawn_debug_ui();
     }
 }
