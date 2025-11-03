@@ -1,6 +1,6 @@
 use crate::config::Config;
+use crate::formatters::time::TimeFormat;
 use crate::ui::timer::data_model::{SelectedSegmentInfoData, SplitRowData};
-use crate::utils::time::format_timer;
 
 use adw::prelude::ActionRowExt as _;
 use adw::ActionRow;
@@ -45,7 +45,7 @@ pub fn build_timer_box(timer: &Timer, config: &mut Config) -> GtkBox {
         timer_box.add_css_class("inactive-timer");
     }
 
-    let formatted = format_timer(timer, config);
+    let formatted = config.format.timer.format_timer(timer);
     let (left, right) = if let Some((l, r)) = formatted.rsplit_once('.') {
         (format!("{l}."), r.to_owned())
     } else {

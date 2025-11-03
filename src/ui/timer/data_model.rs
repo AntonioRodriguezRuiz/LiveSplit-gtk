@@ -1,6 +1,5 @@
 use crate::config::Config;
 use crate::formatters::label::format_label;
-use crate::utils::time::{format_segment_time, format_split_time};
 
 use gtk4::prelude::ListBoxRowExt as _;
 use gtk4::ListBox;
@@ -107,7 +106,7 @@ fn format_signed(diff: TimeDuration, config: &mut Config) -> String {
         "~"
     };
     let abs = diff.abs();
-    let formatted = format_segment_time(&abs, config);
+    let formatted = config.format.segment.format_segment_time(&abs);
     format!("{sign}{formatted}")
 }
 
@@ -141,10 +140,9 @@ pub fn compute_segment_row(
         .unwrap_or_default()
         .to_duration();
 
-    let mut value_text = format_split_time(
+    let mut value_text = config.format.split.format_split_time(
         &segment.comparison(timer.current_comparison()),
-        timer,
-        config,
+        timer.current_timing_method(),
     );
 
     let mut segment_classes: Vec<&'static str> = Vec::new();
@@ -203,7 +201,10 @@ pub fn compute_segment_row(
                     .unwrap_or_default();
 
                 if config.general.split_format == Some(String::from("Time")) {
-                    value_text = format_split_time(&segment.split_time(), timer, config);
+                    value_text = config
+                        .format
+                        .split
+                        .format_split_time(&segment.split_time(), timer.current_timing_method());
                 } else if segment_comparison != TimeDuration::ZERO {
                     // DIFF
                     value_text = format_signed(diff, config);
@@ -308,11 +309,14 @@ pub fn compute_selected_segment_info(
         TimeDuration::ZERO
     };
 
-    let best_value_text = format_split_time(&selected_segment.best_segment_time(), timer, config);
+    let best_value_text = config.format.split.format_split_time(
+        &selected_segment.best_segment_time(),
+        timer.current_timing_method(),
+    );
 
     let comparison_label_text = format!("{}:", format_label(timer.current_comparison()));
 
-    let comparison_value_text = format_segment_time(
+    let comparison_value_text = config.format.segment.format_segment_time(
         &selected_segment
             .comparison_timing_method(timer.current_comparison(), timer.current_timing_method())
             .unwrap_or_default()
@@ -320,7 +324,6 @@ pub fn compute_selected_segment_info(
             .checked_sub(previous_comparison_time)
             .unwrap_or_default()
             .abs(), // Abs because later split might be shorter than previous
-        config,
     );
 
     SelectedSegmentInfoData {
