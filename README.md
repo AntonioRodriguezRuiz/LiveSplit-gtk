@@ -91,6 +91,7 @@ Hotkeys are handled by the app even when the window isn’t focused (global hotk
   - [ ] “Always on top” toggle
   - [ ] Layout customization (rows, columns, sizes, themes)
   - [ ] Translations (multi-language)
+  - [ ] Enable/Disable color smooth color transitions (segment highlight)
 - [ ] Settings
   - [ ] Settings screen (in-app)
   - [ ] Export/import settings
