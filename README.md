@@ -61,6 +61,8 @@ Tip: Use the same menu to Save Splits when you're done. There are currently no a
 
 Hotkeys are handled by the app even when the window isn’t focused (global hotkeys). On Linux, this currently relies on the X11 backend.
 
+Wayland support will be added when consistant support for global hotkeys through xdg portals is available on all major desktop environments. Or at least when I can get it working on my own system (GNOME Wayland).
+
 ---
 
 ## Features
