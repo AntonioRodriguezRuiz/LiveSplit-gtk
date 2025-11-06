@@ -62,8 +62,10 @@ label {
     background-clip: padding-box;
     border-radius: 12px;
     border: 1px solid @window_bg_color;
-    box-shadow: 0 0 0 1px rgba(0, 0, 6, 0.03) m 0 1px 3px 1px
-        rgba(0, 0, 6, 0.07) 0 2px 6px 2px rgba(0, 0, 6, 0.03);
+    box-shadow:
+        0 0 0 1px rgba(0, 0, 6, 0.03),
+        0 1px 3px 1px rgba(0, 0, 6, 0.07),
+        0 2px 6px 2px rgba(0, 0, 6, 0.03);
 }
 
 .split-boxed-list {
@@ -98,6 +100,11 @@ label {
     border-bottom: 1px solid @window_bg_color;
 }
 
+.last-split-boxed-list row.activatable:selected,
+.split-boxed-list row.activatable:selected {
+    background-color: alpha(@accent_bg_color, 0.25);
+}
+
 .last-split-boxed-list row.activatable:not(:selected):hover,
 .split-boxed-list row.activatable:not(:selected):hover {
     background-color: alpha(@card_bg_color, 0.3);
@@ -118,5 +125,5 @@ label {
 }
 
 .current-segment {
-    background-color: alpha(@accent_bg_color, 0.25);
+    background-color: alpha(@accent_bg_color, 0.5);
 }

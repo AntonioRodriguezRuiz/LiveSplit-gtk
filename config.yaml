@@ -1,5 +1,8 @@
-# general:
-#   splits: test_splits/Super_Mario_64_-_16_Star_No_LBLJ_DW_Reds_eab37d1e.lss
+general:
+  splits: test_splits/Super_Mario_64_-_16_Star_No_LBLJ_DW_Reds_eab37d1e.lss
+#   auto-splitter: test_splits/silksong_autosplit_wasm_stable.wasm
+style:
+  max-segments-displayed: 10
 #   split-format: Diff
 #   comparison: Personal Best
 #   timing-method: RealTime

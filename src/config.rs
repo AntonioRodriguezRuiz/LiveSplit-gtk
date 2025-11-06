@@ -42,11 +42,22 @@ pub struct General {
     pub auto_splitter: Option<PathBuf>,
 }
 
-#[derive(Default, Deserialize, Debug, Clone)]
+#[derive(Deserialize, Debug, Clone)]
 #[serde(rename_all = "kebab-case")]
 pub struct Style {
     pub max_segments_displayed: Option<usize>,
+    pub segments_scroll_follow_from: Option<usize>,
     pub split_format: Option<String>,
+}
+
+impl Default for Style {
+    fn default() -> Self {
+        Self {
+            max_segments_displayed: Some(10),
+            segments_scroll_follow_from: Some(8),
+            split_format: Some("{name} - {time}".to_string()),
+        }
+    }
 }
 
 #[derive(Default, Deserialize, Debug, Clone)]

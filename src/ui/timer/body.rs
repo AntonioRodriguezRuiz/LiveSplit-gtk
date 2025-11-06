@@ -4,7 +4,9 @@ use adw::prelude::ActionRowExt as _;
 use adw::ActionRow;
 use glib::clone;
 use gtk4::prelude::*;
-use gtk4::{Align, Box as GtkBox, Label, ListBox, Orientation, ScrolledWindow, SelectionMode};
+use gtk4::{
+    Adjustment, Align, Box as GtkBox, Label, ListBox, Orientation, ScrolledWindow, SelectionMode,
+};
 
 use livesplit_core::{Timer, TimerPhase};
 
@@ -68,11 +70,11 @@ impl SegmentList {
         let height_request = SegmentList::compute_scroller_height(timer, config);
 
         let scroller = ScrolledWindow::builder()
-            .vexpand(false)
             .hexpand(false)
+            .vexpand(false)
             .min_content_height(SegmentRow::get_natural_height())
             .height_request(height_request)
-            // .css_classes(["splits-scroll"])
+            .kinetic_scrolling(true)
             .build();
 
         let list = ListBox::builder()
@@ -127,16 +129,38 @@ impl SegmentList {
         if comp_changed || splits_changed || count_changed || phase_changed {
             self.rebuild_rows(timer, config);
         } else if phase.is_running() {
+            self.update_scroll_position(timer, config);
             self.update_rows_minimal(timer, config);
         }
 
         if phase_changed {
+            if phase.is_not_running() {
+                // Go to the beggining of the split list after a reset
+                self.update_scroll_position(timer, config);
+            }
             self.update_selection_policy(timer, phase, selected_index);
         }
 
         self.last_phase = phase;
         self.last_comparison = timer.current_comparison().to_string();
         self.last_splits_key = splits_key_current;
+    }
+
+    fn update_scroll_position(&mut self, timer: &Timer, config: &Config) {
+        let mut adjustment = self.scroller.vadjustment();
+
+        if let Some(cur) = timer.current_split_index() {
+            let follow_from = config.style.segments_scroll_follow_from.unwrap_or(7);
+            let y = SegmentRow::get_natural_height() * (cur as i32 + 1 - follow_from as i32);
+
+            if let Some(row) = self.list.row_at_index(cur as i32) {
+                adjustment.set_value(if cur >= follow_from { y as f64 } else { 0.0 });
+            }
+        } else {
+            adjustment.set_value(0.0);
+        }
+
+        self.scroller.set_vadjustment(Some(&adjustment));
     }
 
     fn get_selected_row_index(&mut self, timer: &Timer, phase: TimerPhase) -> Option<i32> {
