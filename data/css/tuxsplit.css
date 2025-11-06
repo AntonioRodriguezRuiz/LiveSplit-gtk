@@ -64,7 +64,6 @@ label {
     border: 1px solid @window_bg_color;
     box-shadow:
         0 0 0 1px rgba(0, 0, 6, 0.03),
-        0 1px 3px 1px rgba(0, 0, 6, 0.07),
         0 2px 6px 2px rgba(0, 0, 6, 0.03);
 }
 
@@ -81,7 +80,6 @@ label {
 .split-boxed-list,
 .last-split-boxed-list {
     background-color: @card_bg_color;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
 }
 
 .split-boxed-list row:first-child {
@@ -92,12 +90,12 @@ label {
 .last-split-boxed-list row:last-child {
     border-bottom-left-radius: 12px;
     border-bottom-right-radius: 12px;
-    border-top: 2px solid @window_bg_color;
+    border-top: 2px solid var(--sidebar-border-color);
 }
 
 .last-split-boxed-list row,
 .split-boxed-list row {
-    border-bottom: 1px solid @window_bg_color;
+    border-bottom: 1px solid var(--sidebar-border-color);
 }
 
 .last-split-boxed-list row.activatable:selected,
