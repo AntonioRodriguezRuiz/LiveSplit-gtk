@@ -443,6 +443,7 @@ impl SegmentSuffix {
                 )
                 .as_str(),
         );
+        self.delta_label.set_label("");
         if let Some(current_segment_index) = opt_current_segment_index {
             if current_segment_index > index {
                 self.compute_passed_segment(
@@ -482,6 +483,7 @@ impl SegmentSuffix {
 
         if split_time == time::Duration::ZERO {
             self.comparison_label.set_label("--");
+            self.delta_label.set_label("");
         } else {
             let diff = split_time
                 .checked_sub(segment_comparison_time)
