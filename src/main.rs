@@ -4,15 +4,16 @@ mod ui;
 
 use std::sync::{Arc, RwLock};
 
-use livesplit_core::{HotkeySystem, Timer};
+use livesplit_core::{auto_splitting::Runtime, HotkeySystem, Timer};
 use tracing::info;
 
 use adw::prelude::*;
-use adw::Application;
+use adw::{Application, ApplicationWindow, ToolbarView};
 use gtk4::{gdk::Display, CssProvider};
 
 use config::Config;
-use ui::timer::TimerUI;
+use ui::timer::TuxSplitTimer;
+use ui::TuxSplitHeader;
 
 fn main() {
     std::env::set_var("GDK_BACKEND", "x11"); // Livesplit-core does not support Wayland global shortcut portal yet
@@ -37,9 +38,9 @@ fn main() {
     app.run();
 }
 
-#[derive(Clone)]
 pub struct TuxSplit {
     pub timer: Arc<RwLock<Timer>>,
+    pub runtime: Runtime,
     pub config: Arc<RwLock<Config>>,
     pub hotkey_system: Arc<RwLock<HotkeySystem>>,
 }
@@ -63,7 +64,10 @@ impl TuxSplit {
 
         let stimer = timer.into_shared();
 
+        let runtime = Runtime::new(stimer.clone());
+
         config.configure_timer(&mut stimer.write().unwrap());
+        config.maybe_load_auto_splitter(&runtime);
 
         let Some(hotkey_system) = config.create_hotkey_system(stimer.clone()) else {
             panic!("Could not load HotkeySystem")
@@ -71,6 +75,7 @@ impl TuxSplit {
 
         Self {
             timer: stimer,
+            runtime,
             config: Arc::new(RwLock::new(config)),
             hotkey_system: Arc::new(RwLock::new(hotkey_system)),
         }
@@ -91,15 +96,20 @@ impl TuxSplit {
     fn build_ui(&mut self, app: &Application) {
         Self::load_css();
 
-        // TODO: Change this to use main ui, from then render timer ui when loading a file
-        // To ensure changes in config and timer translate
-        let timer_binding = self.timer.clone();
-        let config_binding = self.config.clone();
-        let mut timer_ui = TimerUI::new(timer_binding, config_binding);
+        let window: ApplicationWindow = ApplicationWindow::builder()
+            .application(app)
+            .title("TuxSplit")
+            .build();
 
-        let window = timer_ui.build_ui(app);
+        let toolbar_view = ToolbarView::new();
+        let header = TuxSplitHeader::new(&window, self.timer.clone(), self.config.clone());
+        toolbar_view.add_top_bar(header.header());
 
+        let mut timer_widget = TuxSplitTimer::new(self.timer.clone(), self.config.clone());
+        timer_widget.start_refresh_loop();
+        toolbar_view.set_content(Some(timer_widget.clamped()));
+
+        window.set_content(Some(&toolbar_view));
         window.present();
-        // timer_ui.spawn_debug_ui();
     }
 }
