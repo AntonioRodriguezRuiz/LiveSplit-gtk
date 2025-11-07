@@ -4,19 +4,21 @@ mod ui;
 
 use std::sync::{Arc, RwLock};
 
-use livesplit_core::{auto_splitting::Runtime, HotkeySystem, Timer};
+use livesplit_core::{HotkeySystem, Timer, auto_splitting::Runtime};
 use tracing::info;
 
 use adw::prelude::*;
 use adw::{Application, ApplicationWindow, ToolbarView};
-use gtk4::{gdk::Display, CssProvider};
+use gtk4::{CssProvider, gdk::Display};
 
 use config::Config;
-use ui::timer::TuxSplitTimer;
 use ui::TuxSplitHeader;
+use ui::timer::TuxSplitTimer;
 
 fn main() {
-    std::env::set_var("GDK_BACKEND", "x11"); // Livesplit-core does not support Wayland global shortcut portal yet
+    unsafe {
+        std::env::set_var("GDK_BACKEND", "x11"); // Livesplit-core does not support Wayland global shortcut portal yet
+    }
 
     // Set tracing to stdout
     tracing_subscriber::fmt()
