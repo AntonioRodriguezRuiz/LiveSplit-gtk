@@ -31,6 +31,13 @@ impl Default for TimeFormat {
         }
     }
 }
+#[derive(Debug, Clone, Copy)]
+#[allow(clippy::enum_variant_names)]
+pub enum TimeFormatPreset {
+    ShowDecimals,
+    SmartDecimals,
+    NoDecimals,
+}
 
 impl TimeFormat {
     #[allow(clippy::fn_params_excessive_bools)]
@@ -47,10 +54,27 @@ impl TimeFormat {
             show_minutes,
             show_seconds,
             show_decimals,
-            decimal_places,
+            decimal_places: decimal_places.clamp(1, 3),
             dynamic,
             cached_pattern: None,
         }
+    }
+
+    /// Creates a `TimeFormat` from a high-level preset.
+    /// `ShowDecimals`: fixed H:M:S with decimals.
+    /// `SmartDecimals`: dynamic format that hides decimals over a minute/hour.
+    /// `NoDecimals`: fixed H:M:S without decimals.
+    pub fn from_preset(preset: TimeFormatPreset) -> Self {
+        match preset {
+            TimeFormatPreset::ShowDecimals => Self::new(true, true, true, true, 2, false),
+            TimeFormatPreset::SmartDecimals => Self::new(true, true, true, true, 2, true),
+            TimeFormatPreset::NoDecimals => Self::new(true, true, true, false, 2, false),
+        }
+    }
+
+    pub fn set_decimal_places(&mut self, places: u8) {
+        self.decimal_places = places.clamp(1, 3);
+        self.cached_pattern = None;
     }
 
     fn get_pattern(&mut self, total_millis: Option<i64>) -> String {
@@ -73,26 +97,27 @@ impl TimeFormat {
         let mut show_decimals = self.show_decimals;
 
         if self.dynamic
-            && let Some(ms) = total_millis {
-                if ms < 60_000 {
-                    // Under a minute: hide hours and minutes
-                    show_hours = false;
-                    show_minutes = false;
-                    // Keep seconds/decimals as configured
-                } else if ms < 3_600_000 {
-                    // Under an hour: hide hours
-                    show_hours = false;
-                    // When both minutes and seconds are shown, suppress decimals (example behavior)
-                    if self.show_minutes && self.show_seconds {
-                        show_decimals = false;
-                    }
-                } else {
-                    // 1 hour or more: keep hours; suppress decimals when minutes+seconds are shown
-                    if self.show_minutes && self.show_seconds {
-                        show_decimals = false;
-                    }
+            && let Some(ms) = total_millis
+        {
+            if ms < 60_000 {
+                // Under a minute: hide hours and minutes
+                show_hours = false;
+                show_minutes = false;
+                // Keep seconds/decimals as configured
+            } else if ms < 3_600_000 {
+                // Under an hour: hide hours
+                show_hours = false;
+                // When both minutes and seconds are shown, suppress decimals (example behavior)
+                if self.show_minutes && self.show_seconds {
+                    show_decimals = false;
+                }
+            } else {
+                // 1 hour or more: keep hours; suppress decimals when minutes+seconds are shown
+                if self.show_minutes && self.show_seconds {
+                    show_decimals = false;
                 }
             }
+        }
 
         let mut pattern = String::new();
         let push_sep = |sep: char, pat: &mut String| {

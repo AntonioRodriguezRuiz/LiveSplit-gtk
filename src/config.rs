@@ -2,12 +2,11 @@
 // Original code by: CryZe
 // Original repository: github.com/CryZe/livesplit-one-desktop
 // Commit: c636ba8
-use crate::formatters::TimeFormat;
+use crate::formatters::{TimeFormat, TimeFormatPreset};
 
 use livesplit_core::{
-    auto_splitting,
+    HotkeyConfig, HotkeySystem, Run, Segment, SharedTimer, Timer, TimingMethod, auto_splitting,
     run::{parser::composite, saver::livesplit::save_timer},
-    HotkeyConfig, HotkeySystem, Run, Segment, SharedTimer, Timer, TimingMethod,
 };
 use serde::Deserialize;
 use std::{
@@ -47,7 +46,6 @@ pub struct General {
 pub struct Style {
     pub max_segments_displayed: Option<usize>,
     pub segments_scroll_follow_from: Option<usize>,
-    pub split_format: Option<String>,
 }
 
 impl Default for Style {
@@ -55,7 +53,6 @@ impl Default for Style {
         Self {
             max_segments_displayed: Some(10),
             segments_scroll_follow_from: Some(8),
-            split_format: Some("{name} - {time}".to_string()),
         }
     }
 }
@@ -86,9 +83,9 @@ pub struct Format {
 impl Default for Format {
     fn default() -> Self {
         Self {
-            split: TimeFormat::new(true, true, true, true, 2, true),
-            timer: TimeFormat::default(),
-            segment: TimeFormat::default(),
+            split: TimeFormat::from_preset(TimeFormatPreset::SmartDecimals),
+            timer: TimeFormat::from_preset(TimeFormatPreset::ShowDecimals),
+            segment: TimeFormat::from_preset(TimeFormatPreset::ShowDecimals),
         }
     }
 }
@@ -184,9 +181,10 @@ impl Config {
 
     pub fn maybe_load_auto_splitter(&self, runtime: &auto_splitting::Runtime) {
         if let Some(auto_splitter) = &self.general.auto_splitter
-            && let Err(e) = runtime.load_script_blocking(auto_splitter.clone()) {
-                error!("Auto Splitter failed to load: {}", &e); // TODO: Create a custom error that
-                                                                // pops up in the UI
-            }
+            && let Err(e) = runtime.load_script_blocking(auto_splitter.clone())
+        {
+            error!("Auto Splitter failed to load: {}", &e); // TODO: Create a custom error that
+            // pops up in the UI
+        }
     }
 }

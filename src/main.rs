@@ -87,13 +87,17 @@ impl TuxSplit {
     fn load_css() {
         let provider = CssProvider::new();
         provider.load_from_path("data/css/tuxsplit.css");
-
         let display = Display::default().expect("Could not connect to a display");
         gtk4::style_context_add_provider_for_display(
             &display,
             &provider,
             gtk4::STYLE_PROVIDER_PRIORITY_APPLICATION,
         );
+
+        // Load gtk icon theme
+        let icon_theme = gtk4::IconTheme::default();
+        icon_theme.add_resource_path("/data/icons");
+        icon_theme.set_display(Some(&display));
     }
 
     fn build_ui(&mut self, app: &Application) {

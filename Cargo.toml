@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-adw = { version = "0.8.0", package = "libadwaita", features = ["v1_1", "v1_5", "v1_6"] }
+adw = { version = "0.8.0", package = "libadwaita", features = ["v1_1", "v1_5", "v1_6", "v1_8"] }
 glib = "0.21.3"
 gtk4 = "0.10.1"
 livesplit-core = { version = "0.13.0", features = ["auto-splitting"] }

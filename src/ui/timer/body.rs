@@ -10,7 +10,7 @@ use gtk4::{
 };
 use gtk4::{CenterBox, prelude::*};
 
-use livesplit_core::{Timer, TimerPhase};
+use livesplit_core::{Timer, TimerPhase, analysis::delta::calculate as calculate_delta};
 
 /// The body of the Timer UI:
 ///
@@ -178,6 +178,10 @@ impl SegmentList {
         self.last_phase = phase;
         self.last_comparison = timer.current_comparison().to_string();
         self.last_splits_key = splits_key_current;
+
+        // Update scroller height request
+        let height_request = SegmentList::compute_scroller_height(timer, config);
+        self.scroller.set_height_request(height_request);
     }
 
     fn update_scroll_position(&mut self, timer: &Timer, config: &Config) {

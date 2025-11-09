@@ -3,12 +3,13 @@ use std::sync::{Arc, RwLock};
 use adw::prelude::*;
 use adw::{self, AboutDialog, AlertDialog};
 use gtk4::{
-    gio, Align, Box as GtkBox, FileChooserDialog, FileFilter, Label, ListBox, MenuButton,
-    Orientation::Vertical,
+    Align, Box as GtkBox, FileChooserDialog, FileFilter, Label, ListBox, MenuButton,
+    Orientation::Vertical, gio,
 };
 use livesplit_core::Timer;
 
 use crate::config::Config;
+use crate::ui::menu::TimerPreferencesDialog;
 
 /// `TuxSplitHeader`
 /// A top bar that renders the application title and a hamburger menu.
@@ -42,6 +43,7 @@ pub struct TuxSplitMenu {
     button: MenuButton,
 }
 
+#[allow(clippy::needless_pass_by_value)]
 impl TuxSplitMenu {
     pub fn new(
         parent: &adw::ApplicationWindow,
@@ -78,7 +80,11 @@ impl TuxSplitMenu {
             config.clone(),
         ));
         group.add_action(&Self::get_save_action(timer.clone(), config.clone()));
-        group.add_action(&Self::get_settings_action(parent));
+        group.add_action(&Self::get_settings_action(
+            parent,
+            timer.clone(),
+            config.clone(),
+        ));
         group.add_action(&Self::get_keybinds_action(parent));
         group.add_action(&Self::get_about_action(parent));
         button.insert_action_group("app", Some(&group));
@@ -135,15 +141,16 @@ impl TuxSplitMenu {
             file_chooser.connect_response(move |dialog, response| {
                 if response == gtk4::ResponseType::Ok
                     && let Some(file) = dialog.file()
-                        && let Some(path) = file.path() {
-                            let mut c = c_binding.write().unwrap();
-                            c.set_splits_path(path);
-                            if let Some(run) = c.parse_run() {
-                                let mut t = t_binding.write().unwrap();
-                                let _ = t.set_run(run);
-                                c.configure_timer(&mut t);
-                            }
-                        }
+                    && let Some(path) = file.path()
+                {
+                    let mut c = c_binding.write().unwrap();
+                    c.set_splits_path(path);
+                    if let Some(run) = c.parse_run() {
+                        let mut t = t_binding.write().unwrap();
+                        let _ = t.set_run(run);
+                        c.configure_timer(&mut t);
+                    }
+                }
                 dialog.destroy();
             });
 
@@ -189,17 +196,18 @@ impl TuxSplitMenu {
         action
     }
 
-    fn get_settings_action(parent: &adw::ApplicationWindow) -> gio::SimpleAction {
+    fn get_settings_action(
+        parent: &adw::ApplicationWindow,
+        timer: Arc<RwLock<Timer>>,
+        config: Arc<RwLock<Config>>,
+    ) -> gio::SimpleAction {
         let parent_for_settings = parent.clone();
+        let timer_binding = timer.clone();
+        let config_binding = config.clone();
         let action = gio::SimpleAction::new("settings", None);
         action.connect_activate(move |_, _| {
-            let dialog = AlertDialog::builder()
-                .heading("Settings")
-                .body("This feature isn't available yet. Stay tuned!")
-                .default_response("ok")
-                .build();
-            dialog.add_response("ok", "Okay");
-            dialog.present(Some(&parent_for_settings));
+            let prefs = TimerPreferencesDialog::new(timer_binding.clone(), config_binding.clone());
+            prefs.present(&parent_for_settings);
         });
         action
     }
