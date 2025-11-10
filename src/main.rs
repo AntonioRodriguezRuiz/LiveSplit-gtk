@@ -24,10 +24,10 @@ use config::Config;
 use ui::TuxSplitHeader;
 use ui::timer::TuxSplitTimer;
 
-const RESOURCE_PREFIX: &str = "/org/linuxruntools/tuxsplit";
-const RESOURCE_ICONS: &str = "/org/linuxruntools/tuxsplit/icons";
-const RESOURCE_CSS: &str = "/org/linuxruntools/tuxsplit/css/tuxsplit.css";
-const RESOURCE_CONFIG_DEFAULT: &str = "/org/linuxruntools/tuxsplit/config/config.yaml";
+const RESOURCE_PREFIX: &str = "/com/tunixr/tuxsplit";
+const RESOURCE_ICONS: &str = "/com/tunixr/tuxsplit/icons";
+const RESOURCE_CSS: &str = "/com/tunixr/tuxsplit/css/tuxsplit.css";
+const RESOURCE_CONFIG_DEFAULT: &str = "/com/tunixr/tuxsplit/config/config.yaml";
 
 fn main() {
     unsafe {
@@ -44,7 +44,7 @@ fn main() {
     adw::init().expect("Failed to initialize libadwaita");
 
     let app = Application::builder()
-        .application_id("org.linuxRunTools.tuxsplit-beta")
+        .application_id("com.tunixr.tuxsplit-beta")
         .build();
 
     let app_state = Arc::new(RwLock::new(TuxSplit::new()));
