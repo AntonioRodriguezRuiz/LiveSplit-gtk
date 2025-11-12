@@ -497,8 +497,8 @@ impl SegmentSuffix {
         segment: &livesplit_core::Segment,
     ) {
         let segment_comparison_time = segment_comparison_time(segment, timer);
-        let (previous_comparison_duration, previous_comparison_time) =
-            previous_comparison_values(timer, index);
+        let (previous_split_time, gold_duration, previous_comparison_duration) =
+            previous_split_combined_gold_and_prev_comparison(timer, index);
         let segment_comparison_duration = segment_comparison_time
             .checked_sub(previous_comparison_duration)
             .unwrap_or_default()
@@ -522,8 +522,9 @@ impl SegmentSuffix {
                     config,
                     segment,
                     segment_comparison_time,
-                    previous_comparison_time,
+                    previous_split_time,
                     segment_comparison_duration,
+                    gold_duration,
                 );
             }
 
@@ -532,9 +533,9 @@ impl SegmentSuffix {
                     timer,
                     config,
                     index,
-                    segment,
                     segment_comparison_time,
-                    previous_comparison_time,
+                    previous_split_time,
+                    gold_duration,
                 );
             }
         }
@@ -547,8 +548,9 @@ impl SegmentSuffix {
         config: &mut Config,
         segment: &livesplit_core::Segment,
         segment_comparison_time: time::Duration,
-        previous_comparison_time: time::Duration,
+        previous_split_time: time::Duration,
         segment_comparison_duration: time::Duration,
+        gold_duration: time::Duration,
     ) {
         let split_time = segment_split_time(segment, timer);
 
@@ -571,9 +573,8 @@ impl SegmentSuffix {
                 self.delta_label
                     .set_label(format_signed(diff, config).as_str());
 
-                let gold_duration = best_segment_duration(segment, timer);
                 let split_duration = split_time
-                    .checked_sub(previous_comparison_time)
+                    .checked_sub(previous_split_time)
                     .unwrap_or_default();
 
                 self.delta_label.add_css_class(classify_split_label(
@@ -593,9 +594,9 @@ impl SegmentSuffix {
         timer: &Timer,
         config: &mut Config,
         index: usize,
-        segment: &livesplit_core::Segment,
         segment_comparison_time: time::Duration,
-        previous_comparison_time: time::Duration,
+        previous_split_time: time::Duration,
+        gold_duration: time::Duration,
     ) {
         let current_duration = current_attempt_running_duration(timer);
         let diff = current_duration
@@ -604,15 +605,13 @@ impl SegmentSuffix {
 
         let split_running_time = if index == 0 {
             current_duration
-        } else if current_duration > previous_comparison_time {
+        } else if current_duration > previous_split_time {
             current_duration
-                .checked_sub(previous_comparison_time)
+                .checked_sub(previous_split_time)
                 .unwrap_or_default()
         } else {
             time::Duration::ZERO
         };
-
-        let gold_duration = best_segment_duration(segment, timer);
         if segment_comparison_time != time::Duration::ZERO
             && (diff.is_positive()
                 || (gold_duration != time::Duration::ZERO && split_running_time >= gold_duration))

@@ -160,9 +160,10 @@ pub fn classify_split_label(
     goldsplit_duration: time::Duration,
     running: bool,
 ) -> &'static str {
-    if (split_duration < goldsplit_duration || goldsplit_duration == time::Duration::ZERO)
-        && !running
-    {
+    if running {
+        return "";
+    }
+    if split_duration < goldsplit_duration || goldsplit_duration == time::Duration::ZERO {
         "goldsplit"
     } else if diff.is_negative() {
         if split_duration <= comparison_duration {
@@ -179,6 +180,47 @@ pub fn classify_split_label(
     } else {
         "" // how
     }
+}
+
+pub fn previous_split_combined_gold_and_prev_comparison(
+    timer: &Timer,
+    index: usize,
+) -> (time::Duration, time::Duration, time::Duration) {
+    let segments = timer.run().segments();
+    let mut last_non_skipped: Option<usize> = None;
+    if index > 0 {
+        for k in (0..index).rev() {
+            if segment_split_time(&segments[k], timer) != time::Duration::ZERO {
+                last_non_skipped = Some(k);
+                break;
+            }
+        }
+    }
+
+    // Combined gold must include the current segment and any directly previous skipped ones
+    // until the last non-skipped, or the beginning.
+    let start = last_non_skipped.map_or(0, |k| k + 1);
+    let mut combined_gold = time::Duration::ZERO;
+    for k in start..=index {
+        combined_gold = combined_gold
+            .checked_add(best_segment_duration(&segments[k], timer))
+            .unwrap_or_default();
+    }
+
+    // The previous split time is either the last non-skipped split time, or ZERO if none.
+    let previous_split_time = last_non_skipped.map_or(time::Duration::ZERO, |k| {
+        segment_split_time(&segments[k], timer)
+    });
+
+    let previous_comparison_duration = last_non_skipped.map_or(time::Duration::ZERO, |k| {
+        segment_comparison_time(&segments[k], timer)
+    });
+
+    (
+        previous_split_time,
+        combined_gold,
+        previous_comparison_duration,
+    )
 }
 
 #[cfg(test)]
@@ -290,6 +332,180 @@ mod classify_split_labels_tests {
         assert!(
             class.is_empty(),
             "Expected no red/green class when diff is zero: got {class:?}",
+        );
+    }
+}
+
+#[cfg(test)]
+mod skipped_segments_context_tests {
+    use super::*;
+    use livesplit_core::{Run, Segment, Time, TimeSpan, Timer};
+    use time::Duration;
+
+    fn time_rt(seconds: i64) -> Time {
+        Time::new().with_real_time(Some(TimeSpan::from_seconds(seconds as f64)))
+    }
+
+    #[test]
+    fn index_1_with_prev_0_skipped_prev_time_zero_and_gold_is_prev_plus_current() {
+        // Setup: 2 segments, segment 0 skipped (no split), segment 1 current.
+        // Golds: s0 = 1s, s1 = 2s
+        // PB Split Times (cumulative): S1 PB = 25s (S0 skipped so no PB split set for it)
+        let mut run = Run::new();
+        run.set_game_name("Game");
+        run.set_category_name("Any%");
+
+        let mut s0 = Segment::new("S0");
+        s0.set_best_segment_time(time_rt(1));
+        // Skipped: leave split time empty (ZERO)
+
+        let mut s1 = Segment::new("S1");
+        s1.set_best_segment_time(time_rt(2));
+        s1.set_personal_best_split_time(time_rt(25)); // PB cumulative time at segment 1
+
+        run.push_segment(s0);
+        run.push_segment(s1);
+
+        let timer = Timer::new(run).expect("timer");
+
+        let (prev_split_time, combined_gold, prev_comp) =
+            previous_split_combined_gold_and_prev_comparison(&timer, 1);
+
+        assert_eq!(
+            prev_split_time,
+            Duration::ZERO,
+            "previous_split_time must be ZERO when the previous segment was skipped"
+        );
+        assert_eq!(
+            prev_comp,
+            Duration::ZERO,
+            "previous comparison must be ZERO when there is no previous non-skipped segment"
+        );
+        assert_eq!(
+            combined_gold,
+            Duration::seconds(1 + 2),
+            "combined_gold must equal current gold + previous skipped gold"
+        );
+        // Verify segment comparison duration (PB current segment cumulative since previous skipped)
+        let seg_comp_time = segment_comparison_time(&timer.run().segments()[1], &timer);
+        let seg_duration = seg_comp_time.checked_sub(prev_comp).unwrap_or_default();
+        assert_eq!(
+            seg_duration,
+            Duration::seconds(25),
+            "Segment comparison duration should equal PB split time of current (25s) when previous is skipped"
+        );
+    }
+
+    #[test]
+    fn index_2_with_prev_0_and_1_skipped_prev_time_zero_and_gold_is_sum_of_all_three() {
+        // Setup: 3 segments, segments 0 and 1 skipped
+        // Golds: s0 = 1s, s1 = 2s, s2 = 3s
+        // PB Split Times (cumulative): only S2 PB set = 55s (S0 & S1 skipped so no PB split set)
+        let mut run = Run::new();
+        run.set_game_name("Game");
+        run.set_category_name("Any%");
+
+        let mut s0 = Segment::new("S0");
+        s0.set_best_segment_time(time_rt(1));
+        // skipped
+
+        let mut s1 = Segment::new("S1");
+        s1.set_best_segment_time(time_rt(2));
+        // skipped
+
+        let mut s2 = Segment::new("S2");
+        s2.set_best_segment_time(time_rt(3));
+        s2.set_personal_best_split_time(time_rt(55)); // cumulative PB time at segment 2
+
+        run.push_segment(s0);
+        run.push_segment(s1);
+        run.push_segment(s2);
+
+        let timer = Timer::new(run).expect("timer");
+
+        let (prev_split_time, combined_gold, prev_comp) =
+            previous_split_combined_gold_and_prev_comparison(&timer, 2);
+
+        assert_eq!(
+            prev_split_time,
+            Duration::ZERO,
+            "previous_split_time must be ZERO when all previous segments were skipped"
+        );
+        assert_eq!(
+            prev_comp,
+            Duration::ZERO,
+            "previous comparison must be ZERO when there is no previous non-skipped segment"
+        );
+        assert_eq!(
+            combined_gold,
+            Duration::seconds(1 + 2 + 3),
+            "combined_gold must equal the sum of golds for segments 0..=2"
+        );
+        // Verify segment comparison duration (PB cumulative up to current since all previous skipped)
+        let seg_comp_time = segment_comparison_time(&timer.run().segments()[2], &timer);
+        let seg_duration = seg_comp_time.checked_sub(prev_comp).unwrap_or_default();
+        assert_eq!(
+            seg_duration,
+            Duration::seconds(55),
+            "Segment comparison duration should equal PB split time of current (55s) when all previous are skipped"
+        );
+    }
+
+    #[test]
+    fn index_2_with_only_prev_1_skipped_prev_is_split0_and_gold_is_seg1_plus_current() {
+        // Setup: 3 segments, only segment 1 skipped, segment 0 not skipped (has a split time)
+        // Golds: s0 = 1s, s1 = 2s, s2 = 3s
+        // Split times: s0 split = 10s (non-zero), s1 split = ZERO (skipped)
+        // PB Split Times (cumulative): S0 PB = 10s, S2 PB = 55s (so duration across skipped S1 + current = 45s)
+        let mut run = Run::new();
+        run.set_game_name("Game");
+        run.set_category_name("Any%");
+
+        let mut s0 = Segment::new("S0");
+        s0.set_best_segment_time(time_rt(1));
+        s0.set_personal_best_split_time(time_rt(10));
+        s0.set_split_time(time_rt(10)); // non-skipped
+
+        let mut s1 = Segment::new("S1");
+        s1.set_best_segment_time(time_rt(2));
+        // skipped: leave split time empty (ZERO)
+
+        let mut s2 = Segment::new("S2");
+        s2.set_best_segment_time(time_rt(3));
+        s2.set_personal_best_split_time(time_rt(55));
+
+        run.push_segment(s0);
+        run.push_segment(s1);
+        run.push_segment(s2);
+
+        let timer = Timer::new(run).expect("timer");
+
+        let (prev_split_time, combined_gold, prev_comp) =
+            previous_split_combined_gold_and_prev_comparison(&timer, 2);
+
+        assert_eq!(
+            prev_split_time,
+            Duration::seconds(10),
+            "previous_split_time must be the last non-skipped (segment 0) split time"
+        );
+        assert_eq!(
+            prev_comp,
+            Duration::seconds(10),
+            "previous comparison must equal the comparison split at the last non-skipped segment"
+        );
+        assert_eq!(
+            combined_gold,
+            Duration::seconds(2 + 3),
+            "combined_gold must equal gold of skipped segment 1 plus current segment 2"
+        );
+        // Verify segment comparison duration:
+        // PB current split (55) - PB last non-skipped split (10) = 45
+        let seg_comp_time = segment_comparison_time(&timer.run().segments()[2], &timer);
+        let seg_duration = seg_comp_time.checked_sub(prev_comp).unwrap_or_default();
+        assert_eq!(
+            seg_duration,
+            Duration::seconds(45),
+            "Segment comparison duration should equal PB cumulative current (55) - previous non-skipped (10) = 45s"
         );
     }
 }

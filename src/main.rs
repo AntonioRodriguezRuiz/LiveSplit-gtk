@@ -6,6 +6,7 @@ mod utils;
 use std::{
     env,
     path::{Path, PathBuf},
+    rc::Rc,
     sync::{Arc, RwLock},
 };
 
