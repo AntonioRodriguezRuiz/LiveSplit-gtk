@@ -212,15 +212,22 @@ impl SegmentComparison {
 
         let comparison_label_text = format!("{}:", format_label(timer.current_comparison()));
 
-        let comparison_value_text = config.format.comparison.format_segment_time(
-            &segment
+        let comparison_value_text = {
+            let segment_comparison_time = segment
                 .comparison_timing_method(timer.current_comparison(), timer.current_timing_method())
                 .unwrap_or_default()
-                .to_duration()
-                .checked_sub(previous_comparison_time)
-                .unwrap_or_default()
-                .abs(),
-        );
+                .to_duration();
+
+            if previous_comparison_time.is_zero() || segment_comparison_time.is_zero() {
+                String::from("--")
+            } else {
+                let per_segment_time = segment_comparison_time
+                    .checked_sub(previous_comparison_time)
+                    .unwrap_or_default()
+                    .abs();
+                config.format.comparison.format_duration(&per_segment_time)
+            }
+        };
 
         // Update stored labels in place
         if self.best_value.label().as_str() != best_value_text {
