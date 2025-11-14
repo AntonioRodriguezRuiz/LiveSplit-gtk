@@ -1,8 +1,6 @@
 use crate::config::Config;
 use livesplit_core::{Timer, analysis::sum_of_segments::best::calculate as calculate_sob};
 
-use tracing::debug;
-
 pub fn current_attempt_running_duration(timer: &Timer) -> time::Duration {
     use livesplit_core::TimingMethod;
     let current_dur = timer

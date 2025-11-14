@@ -1,17 +1,14 @@
-// mod segments;
+mod row;
+mod table;
 
 use crate::config::Config;
+use crate::ui::editor::table::SegmentsEditor;
 use gtk4::StringList;
-use livesplit_core::{RunEditor, TimeSpan, Timer};
+use livesplit_core::{TimeSpan, Timer};
 use std::sync::{Arc, RwLock};
 
 use adw::prelude::*;
-use adw::{
-    ComboRow, EntryRow, PreferencesDialog, PreferencesGroup, PreferencesPage, PreferencesRow,
-    SpinRow, Window,
-};
-
-// use crate::ui::editor::segments::SegmentsEditor;
+use adw::{ComboRow, EntryRow, PreferencesDialog, PreferencesGroup, PreferencesPage};
 
 pub struct SplitEditor {
     dialog: PreferencesDialog,
@@ -192,6 +189,17 @@ impl SplitEditor {
             .title("Segments")
             .icon_name("view-list-symbolic")
             .build();
+
+        let segment_editor = SegmentsEditor::new(Arc::clone(&self.timer));
+        let group = PreferencesGroup::builder()
+            .title("Segment Editor")
+            .description("Edit your run segments")
+            .build();
+
+        group.add(segment_editor.table());
+
+        page.add(&group);
+
         page
     }
 }
