@@ -1,5 +1,10 @@
+mod context;
+mod model;
 mod row;
 mod table;
+
+pub use context::EditorContext;
+pub use model::SegmentsModel;
 
 use crate::config::Config;
 use crate::ui::editor::table::SegmentsEditor;
