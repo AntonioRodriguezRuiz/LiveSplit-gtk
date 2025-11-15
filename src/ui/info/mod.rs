@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::utils::comparisons::*;
+use crate::utils::comparisons::{segment_comparison_time, previous_comparison_values, segment_split_time, format_signed, best_segment_duration, classify_split_label, segment_best_time, best_comparison_values, current_attempt_running_duration, real_time_sob};
 
 use gtk4::{CenterBox, Label, Orientation::Horizontal, prelude::WidgetExt};
 

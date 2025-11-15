@@ -5,7 +5,10 @@ use glib::Properties;
 use std::cell::RefCell;
 
 mod imp {
-    use super::*;
+    use super::{
+        DerivedObjectProperties, ObjectExt, ObjectImpl, ObjectImplExt, ObjectSubclass, Properties,
+        RefCell,
+    };
 
     // Segment Row Object
     #[derive(Default, Properties)]

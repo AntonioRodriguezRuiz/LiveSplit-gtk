@@ -6,8 +6,8 @@ use time::Duration as TimeDuration;
 use crate::formatters::time::TimeFormat;
 use crate::ui::editor::row::SegmentRow;
 
-/// SegmentsModel owns the ListStore of SegmentRow and provides methods
-/// to build and refresh it from a Timer and a chosen TimingMethod.
+/// `SegmentsModel` owns the `ListStore` of `SegmentRow` and provides methods
+/// to build and refresh it from a Timer and a chosen `TimingMethod`.
 ///
 /// Notes:
 /// - `build_from_timer` clears and recreates all rows.
@@ -31,12 +31,12 @@ impl SegmentsModel {
         }
     }
 
-    /// Returns a clone of the underlying ListStore so it can be set as the model.
+    /// Returns a clone of the underlying `ListStore` so it can be set as the model.
     pub fn store(&self) -> ListStore {
         self.store.clone()
     }
 
-    /// Clears and repopulates the store from the given Timer and TimingMethod.
+    /// Clears and repopulates the store from the given Timer and `TimingMethod`.
     pub fn build_from_timer(&self, timer: &Timer, timing_method: TimingMethod) {
         self.store.remove_all();
 
@@ -52,7 +52,7 @@ impl SegmentsModel {
         }
     }
 
-    /// Updates existing rows in-place from the given Timer and TimingMethod.
+    /// Updates existing rows in-place from the given Timer and `TimingMethod`.
     ///
     /// If the number of segments differs from the number of rows, this rebuilds the model.
     pub fn refresh_from_timer(&self, timer: &Timer, timing_method: TimingMethod) {
@@ -87,8 +87,8 @@ impl SegmentsModel {
 /// Computes the display values for a single row, mirroring the logic used by the editor table.
 ///
 /// - name: segment name
-/// - split_time: segment's comparison time ("Personal Best") formatted
-/// - segment_time: delta between this segment's PB split and the last non-skipped PB split
+/// - `split_time`: segment's comparison time ("Personal Best") formatted
+/// - `segment_time`: delta between this segment's PB split and the last non-skipped PB split
 /// - best: delta between this segment's "Best Segments" and the last non-zero best segment
 fn compute_row_values(
     timing_method: TimingMethod,

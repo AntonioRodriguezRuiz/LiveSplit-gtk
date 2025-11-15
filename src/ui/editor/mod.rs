@@ -6,7 +6,6 @@ mod table;
 pub use context::EditorContext;
 pub use model::SegmentsModel;
 
-use crate::config::Config;
 use crate::ui::editor::table::SegmentsEditor;
 use gtk4::StringList;
 use livesplit_core::{TimeSpan, Timer};
@@ -18,20 +17,15 @@ use adw::{ComboRow, EntryRow, PreferencesDialog, PreferencesGroup, PreferencesPa
 pub struct SplitEditor {
     dialog: PreferencesDialog,
     timer: Arc<RwLock<Timer>>,
-    config: Arc<RwLock<Config>>,
 }
 
 impl SplitEditor {
-    pub fn new(timer: Arc<RwLock<Timer>>, config: Arc<RwLock<Config>>) -> Self {
+    pub fn new(timer: Arc<RwLock<Timer>>) -> Self {
         let dialog = PreferencesDialog::new();
         dialog.set_height_request(500);
         dialog.set_title("Timer Preferences");
 
-        let this = Self {
-            dialog,
-            timer,
-            config,
-        };
+        let this = Self { dialog, timer };
 
         let run_info = this.build_run_info_page();
         let segment_editor = this.build_segment_editor_page();

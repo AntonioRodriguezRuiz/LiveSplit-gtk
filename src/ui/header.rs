@@ -119,7 +119,7 @@ impl TuxSplitMenu {
         let action = gio::SimpleAction::new("edit-splits", None);
         let config_binding = config.clone();
         action.connect_activate(move |_, _| {
-            let editor = SplitEditor::new(timer.clone(), config.clone());
+            let editor = SplitEditor::new(timer.clone());
 
             temporary_keybinds_disable(config_binding.clone(), editor.dialog());
 
@@ -227,7 +227,7 @@ impl TuxSplitMenu {
         action.connect_activate(move |_, _| {
             let prefs = TimerPreferencesDialog::new(timer_binding.clone(), config_binding.clone());
 
-            temporary_keybinds_disable(config_binding.clone(), &prefs.dialog());
+            temporary_keybinds_disable(config_binding.clone(), prefs.dialog());
 
             prefs.present(&parent_for_settings);
         });

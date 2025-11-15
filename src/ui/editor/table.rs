@@ -2,9 +2,9 @@ use livesplit_core::{Run, Timer, TimingMethod};
 use std::rc::Rc;
 use std::sync::{Arc, RwLock};
 
-use gtk4::{ColumnView, ColumnViewColumn, gio::ListStore, prelude::*};
+use gtk4::{ColumnView, ColumnViewColumn, prelude::*};
 
-use crate::formatters::time::{TimeFormat, parse_hms};
+use crate::formatters::time::parse_hms;
 use crate::ui::editor::row::SegmentRow;
 use crate::ui::editor::{EditorContext, SegmentsModel};
 
@@ -106,7 +106,7 @@ impl SegmentsEditor {
             let entry = gtk4::Entry::builder().hexpand(true).build();
             cell.set_child(Some(&entry));
 
-            SegmentsEditor::setup_name_cell_common(&cell, &entry, model.clone(), context.clone());
+            SegmentsEditor::setup_name_cell_common(cell, &entry, &model, &context);
         });
         factory.connect_bind(|_, list_item| {
             let cell = list_item.downcast_ref::<gtk4::ColumnViewCell>().unwrap();
@@ -137,7 +137,7 @@ impl SegmentsEditor {
             cell.set_child(Some(&entry));
 
             SegmentsEditor::setup_time_cell_common(
-                &cell,
+                cell,
                 &entry,
                 &self_shared,
                 "split-time".to_string(),
@@ -173,7 +173,7 @@ impl SegmentsEditor {
             cell.set_child(Some(&entry));
 
             SegmentsEditor::setup_time_cell_common(
-                &cell,
+                cell,
                 &entry,
                 &self_shared,
                 "segment-time".to_string(),
@@ -206,7 +206,7 @@ impl SegmentsEditor {
             cell.set_child(Some(&entry));
 
             SegmentsEditor::setup_time_cell_common(
-                &cell,
+                cell,
                 &entry,
                 &self_shared,
                 "best".to_string(),
@@ -231,8 +231,8 @@ impl SegmentsEditor {
     fn setup_name_cell_common(
         cell: &gtk4::ColumnViewCell,
         entry: &gtk4::Entry,
-        model: gtk4::SingleSelection,
-        context: EditorContext,
+        model: &gtk4::SingleSelection,
+        context: &EditorContext,
     ) {
         // Apply name on unfocus and select on focus
         let cell_binding = cell.clone();
@@ -255,7 +255,7 @@ impl SegmentsEditor {
                 {
                     let index = row.index() as usize;
                     let value = e.text().to_string();
-                    let _ = context_binding.set_segment_name(index, value);
+                    let () = context_binding.set_segment_name(index, value);
                 }
             }
         });

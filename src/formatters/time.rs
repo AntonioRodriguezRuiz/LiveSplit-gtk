@@ -588,6 +588,8 @@ mod format_tests {
     }
 }
 
+#[allow(unused_imports)]
+#[allow(clippy::identity_op)]
 mod parse_tests {
     use super::{TimeParseError, parse_hms};
     use time::Duration as TimeDuration;

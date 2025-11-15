@@ -1,5 +1,5 @@
 use crate::config::Config;
-use crate::utils::comparisons::*;
+use crate::utils::comparisons::{segment_comparison_time, previous_split_combined_gold_and_prev_comparison, segment_split_time, format_signed, classify_split_label, current_attempt_running_duration};
 
 use adw::ActionRow;
 use adw::prelude::ActionRowExt as _;
@@ -10,7 +10,7 @@ use gtk4::{
 };
 use gtk4::{CenterBox, prelude::*};
 
-use livesplit_core::{Timer, TimerPhase, analysis::delta::calculate as calculate_delta};
+use livesplit_core::{Timer, TimerPhase};
 
 /// The body of the Timer UI:
 ///

@@ -52,7 +52,7 @@ impl Clone for Config {
             general: self.general.clone(),
             window: self.window.clone(),
             style: self.style.clone(),
-            hotkeys: self.hotkeys.clone(),
+            hotkeys: self.hotkeys,
             format: self.format.clone(),
             connections: self.connections.clone(),
             hotkey_system: None,
@@ -168,7 +168,7 @@ impl Config {
                 Timer::new(self.parse_run_or_default())
                     .expect("Failed to create timer")
                     .into_shared(),
-                self.hotkeys.clone(),
+                self.hotkeys,
             )
             .expect("Failed to create HotkeySystem"),
         );
@@ -185,7 +185,7 @@ impl Config {
                 Timer::new(self.parse_run_or_default())
                     .expect("Failed to create timer")
                     .into_shared(),
-                self.hotkeys.clone(),
+                self.hotkeys,
             )
             .expect("Failed to create HotkeySystem"),
         );

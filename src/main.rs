@@ -6,11 +6,10 @@ mod utils;
 use std::{
     env,
     path::{Path, PathBuf},
-    rc::Rc,
     sync::{Arc, RwLock},
 };
 
-use livesplit_core::{HotkeySystem, Timer, auto_splitting::Runtime};
+use livesplit_core::{Timer, auto_splitting::Runtime};
 use tracing::info;
 
 use adw::prelude::*;
@@ -93,7 +92,7 @@ impl TuxSplit {
         config.configure_timer(&mut stimer.write().unwrap());
         config.maybe_load_auto_splitter(&runtime);
 
-        let Some(_) = config.create_hotkey_system(stimer.clone()) else {
+        let Some(()) = config.create_hotkey_system(stimer.clone()) else {
             panic!("Could not load HotkeySystem")
         };
 

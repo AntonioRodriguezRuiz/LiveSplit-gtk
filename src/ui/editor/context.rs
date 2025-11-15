@@ -8,7 +8,10 @@ use glib::{Properties, subclass::signal::Signal};
 use livesplit_core::{RunEditor, TimeSpan, Timer, TimingMethod};
 
 mod imp {
-    use super::*;
+    use super::{
+        Arc, Cell, DerivedObjectProperties, ObjectImpl, ObjectImplExt, ObjectSubclass, OnceLock,
+        Properties, RefCell, RwLock, Signal, Timer, TimingMethod,
+    };
 
     #[derive(Properties)]
     #[properties(wrapper_type = super::EditorContext)]
@@ -82,7 +85,7 @@ glib::wrapper! {
 }
 
 impl EditorContext {
-    /// Construct a new EditorContext bound to the provided Timer.
+    /// Construct a new `EditorContext` bound to the provided Timer.
     pub fn new(timer: Arc<RwLock<Timer>>) -> Self {
         let obj: Self = glib::Object::new();
         obj.imp().timer.replace(timer);
@@ -138,7 +141,7 @@ impl EditorContext {
     /// Sets the split time at `index` in milliseconds for the current timing method.
     /// Returns true if the operation succeeded.
     ///
-    /// Uses RunEditor to set the "Personal Best" comparison time, mirroring table.rs.
+    /// Uses `RunEditor` to set the "Personal Best" comparison time, mirroring table.rs.
     pub fn set_split_time_ms(&self, index: usize, ms: i64) {
         if ms < 0 {
             return;
@@ -171,7 +174,7 @@ impl EditorContext {
     /// Sets the segment time at `index` in milliseconds for the current timing method.
     /// Returns true if the operation succeeded.
     ///
-    /// Uses RunEditor.active_segment().set_segment_time(), mirroring table.rs.
+    /// Uses `RunEditor.active_segment().set_segment_time()`, mirroring table.rs.
     pub fn set_segment_time_ms(&self, index: usize, ms: i64) {
         if ms < 0 {
             return;
