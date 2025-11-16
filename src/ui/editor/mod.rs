@@ -21,9 +21,9 @@ pub struct SplitEditor {
 
 impl SplitEditor {
     pub fn new(timer: Arc<RwLock<Timer>>) -> Self {
-        let dialog = PreferencesDialog::new();
-        dialog.set_height_request(500);
-        dialog.set_title("Timer Preferences");
+        let dialog = PreferencesDialog::builder()
+            .title("Timer Preferences")
+            .build();
 
         let this = Self { dialog, timer };
 
@@ -186,15 +186,16 @@ impl SplitEditor {
     fn build_segment_editor_page(&self) -> PreferencesPage {
         let page = PreferencesPage::builder()
             .title("Segments")
+            .height_request(670) // Arbitrary I know
             .icon_name("view-list-symbolic")
             .build();
 
-        let segment_editor = SegmentsEditor::new(Arc::clone(&self.timer));
         let group = PreferencesGroup::builder()
             .title("Segment Editor")
             .description("Edit your run segments")
             .build();
 
+        let segment_editor = SegmentsEditor::new(Arc::clone(&self.timer));
         group.add(segment_editor.scroller());
 
         page.add(&group);

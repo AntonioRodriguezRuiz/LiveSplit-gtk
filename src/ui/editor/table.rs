@@ -41,9 +41,7 @@ impl SegmentsEditor {
 
         let scroller = ScrolledWindow::builder()
             .hexpand(true)
-            .vexpand(false)
-            .min_content_height(500)
-            .height_request(500)
+            .vexpand(true)
             .css_classes(["no-background"])
             .kinetic_scrolling(true)
             .build();
