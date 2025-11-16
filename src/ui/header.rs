@@ -9,6 +9,7 @@ use gtk4::{
 use livesplit_core::Timer;
 
 use crate::config::Config;
+use crate::context::TuxSplitContext;
 use crate::ui::editor::SplitEditor;
 use crate::ui::menu::TimerPreferencesDialog;
 
@@ -24,12 +25,13 @@ impl TuxSplitHeader {
         parent: &adw::ApplicationWindow,
         timer: Arc<RwLock<Timer>>,
         config: Arc<RwLock<Config>>,
+        ctx: Arc<TuxSplitContext>,
     ) -> Self {
         let header = adw::HeaderBar::builder()
             .show_end_title_buttons(true)
             .build();
 
-        let menu = TuxSplitMenu::new(parent, timer, config);
+        let menu = TuxSplitMenu::new(parent, timer, config, ctx);
         header.pack_start(menu.button());
 
         Self { header, menu }
@@ -50,6 +52,7 @@ impl TuxSplitMenu {
         parent: &adw::ApplicationWindow,
         timer: Arc<RwLock<Timer>>,
         config: Arc<RwLock<Config>>,
+        ctx: Arc<TuxSplitContext>,
     ) -> Self {
         let button = MenuButton::builder()
             .icon_name("open-menu-symbolic")
@@ -76,13 +79,13 @@ impl TuxSplitMenu {
 
         // Actions
         let group = gio::SimpleActionGroup::new();
-        group.add_action(&Self::get_load_action(
-            parent,
+        group.add_action(&Self::get_load_action(parent, config.clone(), ctx.clone()));
+        group.add_action(&Self::get_save_action(timer.clone(), config.clone()));
+        group.add_action(&Self::get_edit_action(
             timer.clone(),
             config.clone(),
+            ctx.clone(),
         ));
-        group.add_action(&Self::get_save_action(timer.clone(), config.clone()));
-        group.add_action(&Self::get_edit_action(timer.clone(), config.clone()));
         group.add_action(&Self::get_settings_action(
             parent,
             timer.clone(),
@@ -115,11 +118,13 @@ impl TuxSplitMenu {
     fn get_edit_action(
         timer: Arc<RwLock<Timer>>,
         config: Arc<RwLock<Config>>,
+        ctx: Arc<TuxSplitContext>,
     ) -> gio::SimpleAction {
         let action = gio::SimpleAction::new("edit-splits", None);
         let config_binding = config.clone();
+        let ctx_binding = ctx.clone();
         action.connect_activate(move |_, _| {
-            let editor = SplitEditor::new(timer.clone());
+            let editor = SplitEditor::new(timer.clone(), ctx_binding.clone());
 
             temporary_keybinds_disable(config_binding.clone(), editor.dialog());
 
@@ -130,11 +135,12 @@ impl TuxSplitMenu {
 
     fn get_load_action(
         parent: &adw::ApplicationWindow,
-        timer: Arc<RwLock<Timer>>,
         config: Arc<RwLock<Config>>,
+        ctx: Arc<TuxSplitContext>,
     ) -> gio::SimpleAction {
         let parent_binding = parent.clone();
         let action = gio::SimpleAction::new("load-splits", None);
+        let ctx_binding = ctx.clone();
         action.connect_activate(move |_, _| {
             let file_chooser = FileChooserDialog::new(
                 Some("Load Splits"),
@@ -155,8 +161,8 @@ impl TuxSplitMenu {
             file_chooser.add_filter(&lss_filter);
             file_chooser.add_filter(&all_filter);
 
-            let t_binding = timer.clone();
             let c_binding = config.clone();
+            let context = ctx_binding.clone();
             file_chooser.connect_response(move |dialog, response| {
                 if response == gtk4::ResponseType::Ok
                     && let Some(file) = dialog.file()
@@ -165,9 +171,8 @@ impl TuxSplitMenu {
                     let mut c = c_binding.write().unwrap();
                     c.set_splits_path(path);
                     if let Some(run) = c.parse_run() {
-                        let mut t = t_binding.write().unwrap();
-                        let _ = t.set_run(run);
-                        c.configure_timer(&mut t);
+                        drop(c); // Set run needs write access to config
+                        context.set_run(run);
                     }
                 }
                 dialog.destroy();

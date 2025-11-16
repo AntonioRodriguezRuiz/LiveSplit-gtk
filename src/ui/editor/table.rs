@@ -21,7 +21,8 @@ pub struct SegmentsEditor {
 }
 
 impl SegmentsEditor {
-    pub fn new(timer: Arc<RwLock<Timer>>) -> Rc<Self> {
+    pub fn new(context: EditorContext) -> Rc<Self> {
+        let timer = context.timer();
         let run_snapshot = timer.read().unwrap().run().clone();
         let timing_method = Arc::new(RwLock::new(TimingMethod::RealTime));
 
@@ -36,7 +37,6 @@ impl SegmentsEditor {
             .css_classes(["table"])
             .build();
 
-        let context = EditorContext::new(timer.clone());
         context.set_timing_method(TimingMethod::RealTime);
 
         let scroller = ScrolledWindow::builder()
@@ -45,7 +45,6 @@ impl SegmentsEditor {
             .hexpand(true)
             .hscrollbar_policy(gtk4::PolicyType::Never)
             .build();
-
         scroller.set_child(Some(&table));
 
         let container = GtkBox::builder()
@@ -547,7 +546,8 @@ mod tests {
         let timer = make_timer_with_run(run);
 
         // Build editor (takes snapshot internally)
-        let editor = SegmentsEditor::new(Arc::clone(&timer));
+        let context = EditorContext::new(Arc::clone(&timer), None);
+        let editor = SegmentsEditor::new(context);
 
         // Mutate the timer's run
         {
@@ -585,7 +585,8 @@ mod tests {
         run.push_segment(s1);
 
         let timer = make_timer_with_run(run);
-        let editor = SegmentsEditor::new(Arc::clone(&timer));
+        let context = EditorContext::new(Arc::clone(&timer), None);
+        let editor = SegmentsEditor::new(context);
 
         // Initially RealTime -> expect 10.000
         {

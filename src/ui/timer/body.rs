@@ -1,9 +1,13 @@
 use crate::config::Config;
-use crate::utils::comparisons::{segment_comparison_time, previous_split_combined_gold_and_prev_comparison, segment_split_time, format_signed, classify_split_label, current_attempt_running_duration};
+use crate::utils::comparisons::{
+    classify_split_label, current_attempt_running_duration, format_signed,
+    previous_split_combined_gold_and_prev_comparison, segment_comparison_time, segment_split_time,
+};
 
 use adw::ActionRow;
 use adw::prelude::ActionRowExt as _;
 use glib::Propagation;
+use gtk4::ffi::GTK_ICON_LOOKUP_FORCE_REGULAR;
 use gtk4::{
     Align, Box as GtkBox, EventControllerKey, Label, ListBox, Orientation, ScrolledWindow,
     SelectionMode, gdk,
@@ -48,8 +52,8 @@ impl TimerBody {
         self.segment_list.last_segment_list()
     }
 
-    pub fn refresh(&mut self, timer: &Timer, config: &mut Config) {
-        self.segment_list.update(timer, config);
+    pub fn refresh(&mut self, timer: &Timer, config: &mut Config, force_rebuild: bool) {
+        self.segment_list.update(timer, config, force_rebuild);
     }
 }
 
@@ -62,7 +66,6 @@ pub struct SegmentList {
     rows: Vec<SegmentRow>,
     last_phase: TimerPhase,
     last_comparison: String,
-    last_splits_key: Option<String>,
 }
 
 impl SegmentList {
@@ -109,11 +112,6 @@ impl SegmentList {
             rows: Vec::new(),
             last_phase: timer.current_phase(),
             last_comparison: timer.current_comparison().to_owned(),
-            last_splits_key: config
-                .general
-                .splits
-                .as_ref()
-                .map(|p| p.to_string_lossy().to_string()),
         };
         this.build_rows(timer, config);
         this.list.unselect_all();
@@ -133,7 +131,7 @@ impl SegmentList {
         &self.last_segment_list
     }
 
-    pub fn update(&mut self, timer: &Timer, config: &mut Config) {
+    pub fn update(&mut self, timer: &Timer, config: &mut Config, force_rebuild: bool) {
         // Detect structural changes or comparison/splits changes that force a full rebuild.
         let phase = timer.current_phase();
         let comp_changed = self.last_comparison.as_str() != timer.current_comparison();
@@ -142,13 +140,11 @@ impl SegmentList {
             .splits
             .as_ref()
             .map(|p| p.to_string_lossy().to_string());
-        let splits_changed = self.last_splits_key != splits_key_current;
-        let count_changed = self.rows.len() != timer.run().segments().len();
         let phase_changed = self.last_phase != phase;
 
         let selected_index = self.get_selected_row_index();
 
-        if comp_changed || splits_changed || count_changed || phase_changed {
+        if comp_changed || phase_changed || force_rebuild {
             self.rebuild_rows(timer, config);
         } else if phase.is_running() {
             self.update_scroll_position(timer, config);
@@ -177,7 +173,6 @@ impl SegmentList {
 
         self.last_phase = phase;
         self.last_comparison = timer.current_comparison().to_string();
-        self.last_splits_key = splits_key_current;
 
         // Update scroller height request
         let height_request = SegmentList::compute_scroller_height(timer, config);
@@ -344,26 +339,9 @@ impl SegmentList {
             self.rows.push(row);
         }
 
-        // Recompute scroller height if splits changed
-        if self.last_splits_key
-            != config
-                .general
-                .splits
-                .as_ref()
-                .map(|p| p.to_string_lossy().to_string())
-        {
-            let height_request = SegmentList::compute_scroller_height(timer, config);
-            self.scroller.set_height_request(height_request);
-        }
-
         // Refresh caches
         self.last_phase = timer.current_phase();
         self.last_comparison = timer.current_comparison().to_string();
-        self.last_splits_key = config
-            .general
-            .splits
-            .as_ref()
-            .map(|p| p.to_string_lossy().to_string());
     }
 
     fn compute_scroller_height(timer: &Timer, config: &mut Config) -> i32 {

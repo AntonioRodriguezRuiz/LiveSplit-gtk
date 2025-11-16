@@ -17,6 +17,7 @@ use adw::Clamp;
 use adw::prelude::*;
 use gtk4::{Align, Box as GtkBox, Orientation::Vertical};
 
+use crate::context::TuxSplitContext;
 use livesplit_core::Timer;
 
 pub struct TuxSplitTimer {
@@ -31,7 +32,11 @@ pub struct TuxSplitTimer {
 
 impl TuxSplitTimer {
     /// Create the timer widget (header/body/footer composed) but does NOT start refresh loop.
-    pub fn new(timer: Arc<RwLock<Timer>>, config: Arc<RwLock<Config>>) -> Self {
+    pub fn new(
+        timer: Arc<RwLock<Timer>>,
+        config: Arc<RwLock<Config>>,
+        ctx: Arc<TuxSplitContext>,
+    ) -> Self {
         let clamp = Clamp::builder().maximum_size(900).build();
 
         let container = GtkBox::builder()
@@ -67,6 +72,20 @@ impl TuxSplitTimer {
 
         clamp.set_child(Some(&container));
 
+        {
+            // Connect global run-changed to force a rebuild of segment rows.
+            let ctx_binding = ctx.clone();
+            let timer_binding = timer.clone();
+            let config_binding = config.clone();
+            let body_binding = body.clone();
+            ctx_binding.connect_local("run-changed", false, move |_| {
+                let t = timer_binding.read().unwrap();
+                let mut c = config_binding.write().unwrap();
+                body_binding.borrow_mut().refresh(&t, &mut c, true);
+                None
+            });
+        }
+
         Self {
             timer,
             config,
@@ -98,7 +117,7 @@ impl TuxSplitTimer {
             let mut c = config_binding.write().unwrap();
 
             header_binding.borrow_mut().refresh(&t, &mut c);
-            body_binding.borrow_mut().refresh(&t, &mut c);
+            body_binding.borrow_mut().refresh(&t, &mut c, false);
             footer_binding.borrow_mut().refresh(&t, &mut c);
 
             glib::ControlFlow::Continue
