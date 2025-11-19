@@ -165,8 +165,8 @@ impl TimerPreferencesDialog {
         formats_group.add(&segment_expander);
 
         let comparison_expander = self.build_format_expander(
-            "Comparison Format",
-            "Controls formatting of the per-segment comparison value.",
+            "Comparison Times Format",
+            "Controls formatting of the comparison info section.",
             FormatTarget::Comparison,
         );
         formats_group.add(&comparison_expander);
